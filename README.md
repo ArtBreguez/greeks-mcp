@@ -20,6 +20,9 @@ not part of the commercial offering.
 | `get_overview` | `/api/analytics/overview` | Pro | Full dashboard (sentiment, GEX, max pain, expected move, IV surface, term structure, top flow) |
 | `get_snapshot` | `/api/analytics/snapshot` | — | Compact analytics snapshot |
 | `get_levels` | `/api/analytics/levels` | — | Options-derived support/resistance levels |
+| `screener` | `/api/public/screener` | public | Watchlist screener — discover interesting symbols |
+| `gex_heatmap` | `/api/public/gex-heatmap` | public | GEX-by-strike heatmap for a watchlist symbol |
+| `track_record` | `/api/public/track-record` | public | Aggregated signal accuracy (~last 35 days) |
 | `list_plans` | `/api/billing/plans` | public | Plans, prices, limits, routes |
 | `health` | `/health` | public | Service health |
 

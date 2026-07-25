@@ -51,13 +51,22 @@ class GreeksAPIError(RuntimeError):
     """Raised with a human-readable message when the API returns a non-2xx."""
 
 
-def _headers() -> dict[str, str]:
-    if not API_KEY:
+def _headers(require_key: bool = True) -> dict[str, str]:
+    """Build request headers.
+
+    When require_key is True (commercial /api/analytics/* routes) a missing key is
+    a hard error. Public routes pass require_key=False: the key is attached if
+    present (harmless) but its absence is fine.
+    """
+    headers = {"Accept": "application/json"}
+    if API_KEY:
+        headers["X-API-Key"] = API_KEY
+    elif require_key:
         raise GreeksAPIError(
             "GREEKS_API_KEY is not set. Create a key at POST /api/auth/keys and "
             "export it as GREEKS_API_KEY (format grk_<48 hex>)."
         )
-    return {"X-API-Key": API_KEY, "Accept": "application/json"}
+    return headers
 
 
 def _explain_status(status: int, body: str) -> str:
@@ -84,16 +93,17 @@ def _explain_status(status: int, body: str) -> str:
     return " ".join(parts)
 
 
-def _get(path: str, params: dict[str, Any]) -> Any:
-    """GET {BASE_URL}{path} with the API key, returning parsed JSON.
+def _get(path: str, params: dict[str, Any], auth: bool = True) -> Any:
+    """GET {BASE_URL}{path}, returning parsed JSON.
 
     Drops params whose value is None/empty so we never send blank query args.
+    Set auth=False for public routes (no API key required).
     """
     clean = {k: v for k, v in params.items() if v not in (None, "")}
     url = f"{BASE_URL}{path}"
     try:
         with httpx.Client(timeout=TIMEOUT) as client:
-            resp = client.get(url, params=clean, headers=_headers())
+            resp = client.get(url, params=clean, headers=_headers(require_key=auth))
     except httpx.TimeoutException as exc:
         raise GreeksAPIError(
             f"Request to {path} timed out after {TIMEOUT}s. For heavy symbols try "
@@ -286,7 +296,7 @@ def list_plans() -> Any:
     Use this to explain to the user which analytics their plan unlocks, or why a
     call returned 402/403.
     """
-    return _get("/api/billing/plans", {})
+    return _get("/api/billing/plans", {}, auth=False)
 
 
 @mcp.tool()
@@ -294,7 +304,7 @@ def health() -> Any:
     """Service health check: returns {status, supabase, stripe}. Public — no key
     needed. Use to verify GREEKS_BASE_URL is reachable before other calls.
     """
-    return _get("/health", {})
+    return _get("/health", {}, auth=False)
 
 
 def main() -> None:
@@ -304,6 +314,52 @@ def main() -> None:
         mcp.run(transport="streamable-http")
     else:
         mcp.run()
+
+
+@mcp.tool()
+def screener() -> Any:
+    """Public options screener across the curated watchlist (~26 liquid names:
+    SPY, QQQ, AAPL, NVDA, TSLA, …). Returns a per-symbol row with spot price,
+    sentiment and headline analytics — the fastest way to DISCOVER which symbols
+    are interesting before drilling in with the authenticated analytics tools.
+
+    Public — no key needed (IP rate-limited). Takes no arguments; the watchlist
+    is fixed server-side.
+
+    Returns the screener JSON (rows[] of symbol/spotPrice/sentiment/…).
+    """
+    return _get("/api/public/screener", {}, auth=False)
+
+
+@mcp.tool()
+def gex_heatmap(symbol: str = "SPY", expiry: Optional[str] = None) -> Any:
+    """Public GEX-by-strike heatmap for a watchlist symbol (no key needed,
+    IP rate-limited, cached ~5 min). A lightweight, unauthenticated way to see
+    gamma exposure per strike without a plan.
+
+    Args:
+        symbol: A watchlist ticker (SPY, QQQ, AAPL, NVDA, TSLA, …). Defaults to
+            SPY. Symbols outside the public watchlist return an error — use the
+            authenticated `get_gex` for arbitrary symbols.
+        expiry: Optional Unix expiration timestamp; omit for the nearest expiry.
+
+    Returns the heatmap JSON: symbol plus GEX by strike.
+    """
+    sym = (symbol or "SPY").strip().upper()
+    return _get("/api/public/gex-heatmap", {"symbol": sym, "expiry": expiry}, auth=False)
+
+
+@mcp.tool()
+def track_record() -> Any:
+    """Public track record — aggregated accuracy of the published analytics over
+    roughly the last 35 days (per-symbol daily snapshots vs realized high/low/
+    close). Use it to gauge how the signals have performed historically.
+
+    Public — no key needed. Takes no arguments.
+
+    Returns the track-record JSON as computed server-side (updatedAt + records).
+    """
+    return _get("/api/public/track-record", {}, auth=False)
 
 
 if __name__ == "__main__":

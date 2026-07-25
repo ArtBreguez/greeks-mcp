@@ -36,6 +36,12 @@ def _handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json={"symbol": "AAPL", "results": []})
     if request.url.path == "/health":
         return httpx.Response(200, json={"status": "ok"})
+    if request.url.path == "/api/public/screener":
+        return httpx.Response(200, json={"rows": [{"symbol": "SPY"}]})
+    if request.url.path == "/api/public/gex-heatmap":
+        return httpx.Response(200, json={"symbol": request.url.params.get("symbol")})
+    if request.url.path == "/api/public/track-record":
+        return httpx.Response(200, json={"updatedAt": 1, "records": []})
     return httpx.Response(404, text="not found")
 
 
@@ -113,13 +119,33 @@ def run():
     finally:
         server.API_KEY = saved
 
-    # 8. all expected tools are registered
+    # 8. the 3 public data tools work and require no key
+    saved = server.API_KEY
+    server.API_KEY = ""  # public tools must not need a key
+    try:
+        sc = server.screener()
+        check("screener path", _last["path"] == "/api/public/screener")
+        check("screener returns json", isinstance(sc, dict) and "rows" in sc)
+
+        hm = server.gex_heatmap(symbol="spy")
+        check("gex_heatmap path", _last["path"] == "/api/public/gex-heatmap")
+        check("gex_heatmap symbol upper-cased", _last["params"]["symbol"] == "SPY")
+        check("gex_heatmap default expiry dropped", "expiry" not in _last["params"])
+
+        tr = server.track_record()
+        check("track_record path", _last["path"] == "/api/public/track-record")
+        check("track_record returns json", isinstance(tr, dict) and "records" in tr)
+    finally:
+        server.API_KEY = saved
+
+    # 9. all expected tools are registered
     import asyncio
     tools = asyncio.run(server.mcp.list_tools())
     names = {t.name for t in tools}
     expected = {
         "get_max_pain", "get_greeks", "get_gex", "get_flow", "get_overview",
         "get_snapshot", "get_levels", "list_plans", "health",
+        "screener", "gex_heatmap", "track_record",
     }
     check(f"all {len(expected)} tools registered", expected <= names)
 
