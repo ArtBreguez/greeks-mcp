@@ -48,7 +48,7 @@ snippet matching what you have installed:
   "mcpServers": {
     "greeks-analytics": {
       "command": "uvx",
-      "args": ["--from", "git+https://github.com/ArtBreguez/ws_aetherfy.git#subdirectory=mcp", "greeks-mcp"],
+      "args": ["greeks-mcp"],
       "env": { "GREEKS_API_KEY": "grk_your_key_here" }
     }
   }
@@ -57,7 +57,7 @@ snippet matching what you have installed:
 
 **With pipx:**
 ```bash
-pipx install "git+https://github.com/ArtBreguez/ws_aetherfy.git#subdirectory=mcp"
+pipx install greeks-mcp
 ```
 ```json
 {
@@ -70,9 +70,9 @@ pipx install "git+https://github.com/ArtBreguez/ws_aetherfy.git#subdirectory=mcp
 }
 ```
 
-That's it — the assistant now has all 12 tools. `uvx` downloads, builds and runs
-the server on demand in an isolated environment, so there's nothing to install or
-keep updated by hand.
+That's it — the assistant now has all 12 tools. `uvx` downloads and runs the
+published `greeks-mcp` package on demand in an isolated environment, so there's
+nothing to install or keep updated by hand.
 
 ### Where the config block goes
 
@@ -134,6 +134,31 @@ mcp dev server.py
 # Smoke-test the tool wiring (no network needed):
 python test_server.py
 ```
+
+## Publishing (maintainers)
+
+`greeks-mcp` is published to PyPI so end users get the short `uvx greeks-mcp`
+command. The MCP wrapper is safe to publish publicly — it contains no secrets and
+only calls the public HTTP endpoints of the Greeks API (all business logic and
+credentials stay in the private backend).
+
+Release is automated via `.github/workflows/publish-mcp.yml` using PyPI
+**Trusted Publishing** (OIDC — no API token stored). One-time setup:
+
+1. On PyPI → *Account settings* → *Publishing* → add a pending publisher:
+   - PyPI project name `greeks-mcp`, owner `ArtBreguez`, repo `ws_aetherfy`,
+     workflow `publish-mcp.yml`, environment `pypi`.
+2. In GitHub repo settings → *Environments*, create an environment named `pypi`.
+
+Then cut a release by bumping `version` in `pyproject.toml` and pushing a tag:
+
+```bash
+git tag mcp-v0.1.0
+git push origin mcp-v0.1.0
+```
+
+The workflow builds the sdist+wheel, verifies the wheel installs and registers all
+12 tools, and publishes. (You can also trigger it manually from the Actions tab.)
 
 ## Notes
 
