@@ -15,7 +15,7 @@ URL defaults to the public API and can be overridden with GREEKS_BASE_URL for
 local dev (http://localhost:8080).
 
 Run:
-    GREEKS_API_KEY=grk_... python server.py
+    GREEKS_API_KEY=grk_... greeks-mcp        # or: python -m greeks_mcp
 
 Transport is stdio by default (what MCP clients spawn). Set MCP_TRANSPORT=http to
 serve over streamable HTTP instead.
@@ -308,7 +308,7 @@ def health() -> Any:
 
 
 def main() -> None:
-    """Entry point for the `greeks-mcp` console script and `python server.py`."""
+    """Entry point for the `greeks-mcp` console script and `python -m greeks_mcp`."""
     transport = os.environ.get("MCP_TRANSPORT", "stdio").strip().lower()
     if transport in ("http", "streamable-http"):
         mcp.run(transport="streamable-http")

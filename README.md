@@ -1,13 +1,60 @@
-# Greeks / Aetherfy — MCP Server
+# greeks-mcp
+
+[![PyPI](https://img.shields.io/pypi/v/greeks-mcp.svg)](https://pypi.org/project/greeks-mcp/)
+[![Python](https://img.shields.io/pypi/pyversions/greeks-mcp.svg)](https://pypi.org/project/greeks-mcp/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A [Model Context Protocol](https://modelcontextprotocol.io) server that exposes the
-**Greeks Analytics API** (derived options data) as tools for any MCP client —
-Claude Desktop, Cursor, Claude Code, etc. Ask an assistant for GEX, Greeks, Max
-Pain, unusual flow or a full dashboard on any ticker and it pulls live from the API.
+**[Greeks](https://greeks.pro) options-analytics API** as tools for any MCP client —
+**Claude Desktop**, **Cursor**, Claude Code, and more. Ask your assistant for GEX,
+Greeks, Max Pain, unusual flow or a full dashboard on any ticker and it pulls live
+from the API.
 
-Only the **commercial `/api/analytics/*`** surface is wrapped. Raw-data
-`/internal/*` routes are intentionally **not** exposed — they are internal-only and
-not part of the commercial offering.
+Only **derived/computed analytics** are exposed — no raw market data is
+redistributed.
+
+## Quickstart
+
+**1. Get an API key.** Sign up at [greeks.pro](https://greeks.pro) and create a key
+— it looks like `grk_<48 hex>`. Public tools (screener, health, plans) work without
+one.
+
+**2. Add one block to your client config** and restart the client:
+
+```json
+{
+  "mcpServers": {
+    "greeks-analytics": {
+      "command": "uvx",
+      "args": ["greeks-mcp"],
+      "env": { "GREEKS_API_KEY": "grk_your_key_here" }
+    }
+  }
+}
+```
+
+That's it — the assistant now has all 12 tools. [`uv`](https://docs.astral.sh/uv/)
+downloads and runs the published package on demand in an isolated environment, so
+there's nothing to install or keep updated by hand.
+
+Prefer pipx? `pipx install greeks-mcp`, then use `"command": "greeks-mcp"` with no
+`args`.
+
+### Where the config block goes
+
+The same `mcpServers` block works in every MCP client — only the file location
+differs.
+
+| Client | Config file |
+|---|---|
+| Claude Desktop (macOS) | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Claude Desktop (Windows) | `%APPDATA%\Claude\claude_desktop_config.json` |
+| Cursor (global) | `~/.cursor/mcp.json` |
+| Cursor (per-project) | `<project>/.cursor/mcp.json` |
+
+Ready-to-copy configs live in [`examples/`](examples/). After reloading, the server
+shows up under Cursor's Settings → *MCP* with a green dot and its 12 tools; type
+`@greeks-analytics` in chat (or just ask for GEX/greeks/max pain) to use them.
 
 ## Tools
 
@@ -30,135 +77,62 @@ All analytics tools take `symbol` (required) and optional `expiration` (a Unix
 timestamp, or `"all"` for every expiration; omit for the nearest expiry).
 `get_greeks` also accepts `range="atm"`, `moneyness="low,high"` and `limit`.
 
-## Quickstart (users)
-
-You don't host anything. This server runs **on your machine**, spawned by your AI
-client (Claude Desktop, Cursor, …), and talks to the Greeks API using your key.
-
-**1. Get an API key.** Sign up, then create a key — it looks like `grk_<48 hex>`.
-(Register `POST /api/auth/register` → login `POST /api/auth/login` → create key
-`POST /api/auth/keys`, or grab it from your account dashboard.)
-
-**2. Add one block to your client config** and restart the client. Pick the
-snippet matching what you have installed:
-
-**With [uv](https://docs.astral.sh/uv/) (recommended — no manual install):**
-```json
-{
-  "mcpServers": {
-    "greeks-analytics": {
-      "command": "uvx",
-      "args": ["greeks-mcp"],
-      "env": { "GREEKS_API_KEY": "grk_your_key_here" }
-    }
-  }
-}
-```
-
-**With pipx:**
-```bash
-pipx install greeks-mcp
-```
-```json
-{
-  "mcpServers": {
-    "greeks-analytics": {
-      "command": "greeks-mcp",
-      "env": { "GREEKS_API_KEY": "grk_your_key_here" }
-    }
-  }
-}
-```
-
-That's it — the assistant now has all 12 tools. `uvx` downloads and runs the
-published `greeks-mcp` package on demand in an isolated environment, so there's
-nothing to install or keep updated by hand.
-
-### Where the config block goes
-
-The same `mcpServers` block works in every MCP client — only the file location
-differs.
-
-**Claude Desktop** — `claude_desktop_config.json`:
-- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
-
-**Cursor** — a `mcp.json` file (Settings → *MCP* → *Add new global MCP server*
-opens it for you):
-- Global (all projects): `~/.cursor/mcp.json`
-- Per-project (checked into a repo): `<project>/.cursor/mcp.json`
-
-A ready-to-copy Cursor config is included at
-[`examples/cursor-mcp.json`](examples/cursor-mcp.json) — drop it at `~/.cursor/mcp.json`
-(or into a project's `.cursor/`), set your key, and reload Cursor. After reloading,
-the server shows up under Settings → *MCP* with a green dot and its 12 tools; type
-`@greeks-analytics` in chat (or just ask for GEX/greeks/max pain) to use them.
-
-> Cursor and Claude Desktop both speak MCP over stdio with the identical
-> `mcpServers` schema, so this server needs no client-specific build — the same
-> `uvx` / `pipx` / `greeks-mcp` commands work in both.
-
 ## Configuration
 
 | Env var | Required | Default | Description |
 |---|---|---|---|
-| `GREEKS_API_KEY` | for `/api/analytics/*` | — | Your `grk_...` key. Public tools (screener, health, plans, gex_heatmap, track_record) work without it. |
-| `GREEKS_BASE_URL` | no | `https://api.greeks.pro` | API base URL; use `http://localhost:8080` for local dev |
+| `GREEKS_API_KEY` | for `/api/analytics/*` | — | Your `grk_...` key. Public tools work without it. |
+| `GREEKS_BASE_URL` | no | `https://api.greeks.pro` | API base URL |
 | `GREEKS_TIMEOUT` | no | `30` | Per-request timeout (s) |
 | `MCP_TRANSPORT` | no | `stdio` | `stdio` (for clients) or `http` |
 
-## Run manually / from source
+## Run from source
+
+Requires Python ≥ 3.10.
 
 ```bash
-cd mcp
+git clone https://github.com/ArtBreguez/greeks-mcp.git
+cd greeks-mcp
 python -m venv .venv && source .venv/bin/activate
-pip install -e .            # or: pip install -r requirements.txt
+pip install -e ".[dev]"
 
 # stdio (what MCP clients spawn)
-GREEKS_API_KEY=grk_... greeks-mcp        # or: python server.py
+GREEKS_API_KEY=grk_... greeks-mcp        # or: python -m greeks_mcp
 
 # or over HTTP
 GREEKS_API_KEY=grk_... MCP_TRANSPORT=http greeks-mcp
 ```
 
-To point at a locally running backend (`go run main.go` from the repo root), set
-`GREEKS_BASE_URL=http://localhost:8080` in the `env` block or your shell.
-
 ## Development
 
 ```bash
 # Inspect the tools interactively without a full client:
-pip install "mcp[cli]"
-mcp dev server.py
+mcp dev src/greeks_mcp/server.py
 
-# Smoke-test the tool wiring (no network needed):
-python test_server.py
+# Tests (no network needed):
+python tests/test_server.py     # tool wiring (URLs, params, headers, errors)
+python tests/test_e2e.py        # spawns the server over stdio, calls all 12 tools
 ```
 
-## Publishing (maintainers)
+## Releasing (maintainers)
 
-`greeks-mcp` is published to PyPI so end users get the short `uvx greeks-mcp`
-command. The MCP wrapper is safe to publish publicly — it contains no secrets and
-only calls the public HTTP endpoints of the Greeks API (all business logic and
-credentials stay in the private backend).
-
-Release is automated via `.github/workflows/publish-mcp.yml` using PyPI
-**Trusted Publishing** (OIDC — no API token stored). One-time setup:
+Published to PyPI via [Trusted Publishing](https://docs.pypi.org/trusted-publishers/)
+(OIDC — no API token stored). One-time setup:
 
 1. On PyPI → *Account settings* → *Publishing* → add a pending publisher:
-   - PyPI project name `greeks-mcp`, owner `ArtBreguez`, repo `ws_aetherfy`,
-     workflow `publish-mcp.yml`, environment `pypi`.
+   project `greeks-mcp`, owner `ArtBreguez`, repo `greeks-mcp`, workflow
+   `publish.yml`, environment `pypi`.
 2. In GitHub repo settings → *Environments*, create an environment named `pypi`.
 
-Then cut a release by bumping `version` in `pyproject.toml` and pushing a tag:
+Then cut a release by bumping `version` in `pyproject.toml` + `__init__.py` and
+pushing a tag:
 
 ```bash
-git tag mcp-v0.1.0
-git push origin mcp-v0.1.0
+git tag v0.1.0 && git push origin v0.1.0
 ```
 
 The workflow builds the sdist+wheel, verifies the wheel installs and registers all
-12 tools, and publishes. (You can also trigger it manually from the Actions tab.)
+12 tools, and publishes.
 
 ## Notes
 
@@ -168,3 +142,7 @@ The workflow builds the sdist+wheel, verifies the wheel installs and registers a
   names prefer a specific expiration timestamp, or raise `GREEKS_TIMEOUT`.
 - **Derived data only.** No raw market data (quotes, bid/ask, OI, contract prices)
   is redistributed — everything here is computed analytics.
+
+## License
+
+MIT — see [LICENSE](LICENSE).

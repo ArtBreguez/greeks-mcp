@@ -16,7 +16,7 @@ os.environ.setdefault("GREEKS_BASE_URL", "https://api.example.test")
 
 import httpx
 
-import server
+from greeks_mcp import server
 
 _last = {}
 

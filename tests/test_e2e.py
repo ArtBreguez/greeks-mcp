@@ -2,7 +2,8 @@
 End-to-end protocol test for the Greeks MCP server.
 
 Unlike test_server.py (which calls the tool functions directly), this drives the
-server the way a real client (Claude Desktop, Cursor) does: it spawns server.py
+server the way a real client (Claude Desktop, Cursor) does: it spawns the server
+via `python -m greeks_mcp`
 over stdio, performs the MCP `initialize` handshake, lists the tools, and calls
 every tool through the protocol against a mocked Greeks API.
 
@@ -101,7 +102,7 @@ async def main():
     try:
         params = StdioServerParameters(
             command=sys.executable,
-            args=["server.py"],
+            args=["-m", "greeks_mcp"],
             env={
                 **os.environ,
                 "GREEKS_API_KEY": "grk_e2e_test",

@@ -5,20 +5,23 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "greeks-mcp"
 version = "0.1.0"
-description = "MCP server exposing the Greeks / Aetherfy options-analytics API as tools"
+description = "MCP server exposing the Greeks options-analytics API (Greeks, GEX, Max Pain, flow) as tools for Claude Desktop, Cursor, and any MCP client"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "Aetherfy" }]
-keywords = ["mcp", "options", "greeks", "gex", "trading", "analytics", "finance"]
+keywords = ["mcp", "options", "greeks", "gex", "trading", "analytics", "finance", "claude", "cursor"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Financial and Insurance Industry",
+    "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Office/Business :: Financial :: Investment",
 ]
 dependencies = [
@@ -26,12 +29,17 @@ dependencies = [
     "httpx>=0.27",
 ]
 
+[project.optional-dependencies]
+dev = ["build>=1.0", "twine>=5.0"]
+
 [project.urls]
 Homepage = "https://greeks.pro"
 Documentation = "https://greeks.pro/docs"
+Repository = "https://github.com/ArtBreguez/greeks-mcp"
+Issues = "https://github.com/ArtBreguez/greeks-mcp/issues"
 
 [project.scripts]
-greeks-mcp = "server:main"
+greeks-mcp = "greeks_mcp.server:main"
 
-[tool.setuptools]
-py-modules = ["server"]
+[tool.setuptools.packages.find]
+where = ["src"]
