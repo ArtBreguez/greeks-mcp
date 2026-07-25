@@ -30,63 +30,79 @@ All analytics tools take `symbol` (required) and optional `expiration` (a Unix
 timestamp, or `"all"` for every expiration; omit for the nearest expiry).
 `get_greeks` also accepts `range="atm"`, `moneyness="low,high"` and `limit`.
 
-## Setup
+## Quickstart (users)
 
-Requires Python ≥ 3.10.
+You don't host anything. This server runs **on your machine**, spawned by your AI
+client (Claude Desktop, Cursor, …), and talks to the Greeks API using your key.
 
-```bash
-cd mcp
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt          # or: pip install -e .
+**1. Get an API key.** Sign up, then create a key — it looks like `grk_<48 hex>`.
+(Register `POST /api/auth/register` → login `POST /api/auth/login` → create key
+`POST /api/auth/keys`, or grab it from your account dashboard.)
 
-cp .env.example .env                      # then edit GREEKS_API_KEY
-```
+**2. Add one block to your client config** and restart the client. Pick the
+snippet matching what you have installed:
 
-Get an API key by registering (`POST /api/auth/register`), logging in
-(`POST /api/auth/login`), then creating a key (`POST /api/auth/keys`). The key
-looks like `grk_<48 hex>` and goes in the `X-API-Key` header — this server handles
-that for you once `GREEKS_API_KEY` is set.
-
-## Configuration
-
-| Env var | Required | Default | Description |
-|---|---|---|---|
-| `GREEKS_API_KEY` | yes | — | Your `grk_...` key |
-| `GREEKS_BASE_URL` | no | `https://api.greeks.pro` | API base URL; use `http://localhost:8080` for local dev |
-| `GREEKS_TIMEOUT` | no | `30` | Per-request timeout (s) |
-| `MCP_TRANSPORT` | no | `stdio` | `stdio` (for clients) or `http` |
-
-## Run
-
-```bash
-# stdio (what MCP clients spawn)
-GREEKS_API_KEY=grk_... python server.py
-
-# or over HTTP
-GREEKS_API_KEY=grk_... MCP_TRANSPORT=http python server.py
-```
-
-### Claude Desktop / Claude Code
-
-Add to your MCP config (`claude_desktop_config.json` or the client's
-`mcpServers` block):
-
+**With [uv](https://docs.astral.sh/uv/) (recommended — no manual install):**
 ```json
 {
   "mcpServers": {
     "greeks-analytics": {
-      "command": "python",
-      "args": ["/absolute/path/to/ws_aetherfy/mcp/server.py"],
-      "env": {
-        "GREEKS_API_KEY": "grk_your_key_here"
-      }
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/ArtBreguez/ws_aetherfy.git#subdirectory=mcp", "greeks-mcp"],
+      "env": { "GREEKS_API_KEY": "grk_your_key_here" }
     }
   }
 }
 ```
 
-Point `GREEKS_BASE_URL` at `http://localhost:8080` in the `env` block to develop
-against a locally running server (`go run main.go` from the repo root).
+**With pipx:**
+```bash
+pipx install "git+https://github.com/ArtBreguez/ws_aetherfy.git#subdirectory=mcp"
+```
+```json
+{
+  "mcpServers": {
+    "greeks-analytics": {
+      "command": "greeks-mcp",
+      "env": { "GREEKS_API_KEY": "grk_your_key_here" }
+    }
+  }
+}
+```
+
+That's it — the assistant now has all 12 tools. `uvx` downloads, builds and runs
+the server on demand in an isolated environment, so there's nothing to install or
+keep updated by hand.
+
+> Claude Desktop's config lives at `~/Library/Application Support/Claude/claude_desktop_config.json`
+> (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows). Cursor and
+> other clients have an equivalent `mcpServers` block.
+
+## Configuration
+
+| Env var | Required | Default | Description |
+|---|---|---|---|
+| `GREEKS_API_KEY` | for `/api/analytics/*` | — | Your `grk_...` key. Public tools (screener, health, plans, gex_heatmap, track_record) work without it. |
+| `GREEKS_BASE_URL` | no | `https://api.greeks.pro` | API base URL; use `http://localhost:8080` for local dev |
+| `GREEKS_TIMEOUT` | no | `30` | Per-request timeout (s) |
+| `MCP_TRANSPORT` | no | `stdio` | `stdio` (for clients) or `http` |
+
+## Run manually / from source
+
+```bash
+cd mcp
+python -m venv .venv && source .venv/bin/activate
+pip install -e .            # or: pip install -r requirements.txt
+
+# stdio (what MCP clients spawn)
+GREEKS_API_KEY=grk_... greeks-mcp        # or: python server.py
+
+# or over HTTP
+GREEKS_API_KEY=grk_... MCP_TRANSPORT=http greeks-mcp
+```
+
+To point at a locally running backend (`go run main.go` from the repo root), set
+`GREEKS_BASE_URL=http://localhost:8080` in the `env` block or your shell.
 
 ## Development
 
