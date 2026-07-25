@@ -74,9 +74,29 @@ That's it — the assistant now has all 12 tools. `uvx` downloads, builds and ru
 the server on demand in an isolated environment, so there's nothing to install or
 keep updated by hand.
 
-> Claude Desktop's config lives at `~/Library/Application Support/Claude/claude_desktop_config.json`
-> (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows). Cursor and
-> other clients have an equivalent `mcpServers` block.
+### Where the config block goes
+
+The same `mcpServers` block works in every MCP client — only the file location
+differs.
+
+**Claude Desktop** — `claude_desktop_config.json`:
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+
+**Cursor** — a `mcp.json` file (Settings → *MCP* → *Add new global MCP server*
+opens it for you):
+- Global (all projects): `~/.cursor/mcp.json`
+- Per-project (checked into a repo): `<project>/.cursor/mcp.json`
+
+A ready-to-copy Cursor config is included at
+[`examples/cursor-mcp.json`](examples/cursor-mcp.json) — drop it at `~/.cursor/mcp.json`
+(or into a project's `.cursor/`), set your key, and reload Cursor. After reloading,
+the server shows up under Settings → *MCP* with a green dot and its 12 tools; type
+`@greeks-analytics` in chat (or just ask for GEX/greeks/max pain) to use them.
+
+> Cursor and Claude Desktop both speak MCP over stdio with the identical
+> `mcpServers` schema, so this server needs no client-specific build — the same
+> `uvx` / `pipx` / `greeks-mcp` commands work in both.
 
 ## Configuration
 
