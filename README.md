@@ -40,6 +40,22 @@ there's nothing to install or keep updated by hand.
 Prefer pipx? `pipx install greeks-mcp`, then use `"command": "greeks-mcp"` with no
 `args`.
 
+### Docker
+
+A `Dockerfile` is included for containerized runs. The server speaks stdio (what
+MCP clients spawn), so run it interactively (`-i`):
+
+```bash
+docker build -t greeks-mcp .
+docker run --rm -i -e GREEKS_API_KEY=grk_your_key_here greeks-mcp
+```
+
+The image starts and answers MCP introspection (initialize + `tools/list`) with
+no key; `GREEKS_API_KEY` is only needed for the authenticated analytics tools.
+
+To wire the container into an MCP client, set `"command": "docker"` with
+`"args": ["run","--rm","-i","-e","GREEKS_API_KEY","greeks-mcp"]`.
+
 ### Where the config block goes
 
 The same `mcpServers` block works in every MCP client — only the file location

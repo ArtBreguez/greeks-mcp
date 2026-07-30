@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.1] — 2026-07-30
+
+### Fixed
+- Pin `mcp[cli]` to `<2`. The unbounded `>=1.2.0` constraint let installs resolve
+  to `mcp` 2.0.0, which restructured the package and removed
+  `mcp.server.fastmcp` — breaking `uvx greeks-mcp` at startup with
+  `ModuleNotFoundError: No module named 'mcp.server.fastmcp'`.
+
+### Added
+- `Dockerfile` (+ `.dockerignore`) so the server can be built and run as a
+  container. Starts and answers MCP introspection (initialize + tools/list) with
+  no API key — enough for Glama to evaluate it. Public tools work keyless; the
+  authenticated analytics tools use `GREEKS_API_KEY` at runtime when present.
+
 ## [0.1.0] — 2026-07-25
 
 Initial release.

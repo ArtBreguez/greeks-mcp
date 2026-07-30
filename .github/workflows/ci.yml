@@ -67,3 +67,38 @@ jobs:
           assert not missing, f"missing tools: {missing}"
           print(f"OK: {len(names)} tools registered")
           PY
+
+  docker:
+    name: Docker build + introspection
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t greeks-mcp:ci .
+
+      - name: Server starts and answers MCP introspection with no API key
+        run: |
+          python -m venv /tmp/mcpcli
+          /tmp/mcpcli/bin/pip install "mcp[cli]>=1.2.0,<2"
+          /tmp/mcpcli/bin/python - <<'PY'
+          import asyncio
+          from mcp import ClientSession, StdioServerParameters
+          from mcp.client.stdio import stdio_client
+
+          async def main():
+              params = StdioServerParameters(
+                  command="docker",
+                  args=["run", "--rm", "-i", "greeks-mcp:ci"],
+                  env={},
+              )
+              async with stdio_client(params) as (r, w):
+                  async with ClientSession(r, w) as s:
+                      await s.initialize()
+                      tools = await s.list_tools()
+                      names = {t.name for t in tools.tools}
+                      assert len(names) == 12, f"expected 12 tools, got {len(names)}: {names}"
+                      print(f"OK: container exposed {len(names)} tools over MCP")
+
+          asyncio.run(main())
+          PY
