@@ -3,6 +3,7 @@
 [![PyPI](https://img.shields.io/pypi/v/greeks-mcp.svg)](https://pypi.org/project/greeks-mcp/)
 [![Python](https://img.shields.io/pypi/pyversions/greeks-mcp.svg)](https://pypi.org/project/greeks-mcp/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Glama](https://glama.ai/mcp/servers/@ArtBreguez/greeks-mcp/badge)](https://glama.ai/mcp/servers/@ArtBreguez/greeks-mcp)
 
 A [Model Context Protocol](https://modelcontextprotocol.io) server that exposes the
 **[Greeks](https://greeks.pro) options-analytics API** as tools for any MCP client —
